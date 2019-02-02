@@ -1,11 +1,18 @@
 #!/usr/bin/env python3
+
+# many thanks to Kareeeeem for the awesome glitch effects
+#  github.com/Kareeeeem
+
 import io
 import copy
 import random
-import click
 
 from itertools import tee
 from PIL import Image
+
+
+class JpegError(Exception):
+    pass
 
 
 def pairwise(iterable):
@@ -20,21 +27,15 @@ def pairwise(iterable):
 
 class Jpeg(object):
 
-    def __init__(self, image_bytes, amount, seed, iterations):
+    def __init__(self, image_bytes, amount=random.randint(0,99), seed=random.randint(0,99), iterations=random.randint(0,115)):
         self.bytes = image_bytes
         self.new_bytes = None
-        try:
-            self.header_length = self.get_header_length()
-        except ValueError as e:
-            raise click.BadParameter(message=e.message)
+        self.header_length = self.get_header_length()
 
-        self.parameters = {
-            'amount': amount,
-            'seed': seed,
-            'iterations': iterations
-        }
+        self.amount     = amount
+        self.seed       = seed
+        self.iterations = iterations
 
-        self.glitch_bytes()
 
     def get_header_length(self):
         """Get the length of the header by searching sequential 0xFF 0xDA
@@ -47,7 +48,8 @@ class Jpeg(object):
                 result = i + 2
                 return result
 
-        raise ValueError('Not a valid jpg!')
+        raise JpegError('Not a valid JPEG')
+
 
     def glitch_bytes(self):
         """Glitch the image bytes, after the header based on the parameters.
@@ -56,9 +58,9 @@ class Jpeg(object):
         simple division by iterations. 'Iterations' should be self explanatory
         """
 
-        amount = self.parameters['amount'] / 100
-        seed = self.parameters['seed'] / 100
-        iterations = self.parameters['iterations']
+        amount = self.amount / 100
+        seed = self.seed / 100
+        iterations = self.iterations
 
         # work with a copy of the original bytes. We might need the original
         # bytes around if we glitch it so much we break the file.
@@ -92,60 +94,22 @@ class Jpeg(object):
 
         self.new_bytes = new_bytes
 
+
     def save_image(self, name):
         """Save the image to a file. Keep trying by re-glitching the image with
         less iterations if it fails
         """
 
         while True:
+            self.glitch_bytes()
+
             try:
                 stream = io.BytesIO(self.new_bytes)
                 im = Image.open(stream)
                 im.save(name)
                 return
-            except IOError:
-                if self.parameters['iterations'] == 1:
-                    raise click.BadParameter(message='This image is beyond\
-                            repair, maybe try again?', param_hint=['image'])
 
-                self.parameters['iterations'] -= 1
-                self.glitch_bytes()
-
-@click.command()
-@click.option('--amount', '-a', type=click.IntRange(0, 99, clamp=True),
-              default=random.randint(0, 99), help="Insert high or low values?")
-@click.option('--seed', '-s', type=click.IntRange(0, 99, clamp=True),
-              default=random.randint(0, 99), help="Begin glitching at the\
-                      start on a bit later on.")
-@click.option('--iterations', '-i', type=click.IntRange(0, 115, clamp=True),
-              default=random.randint(0, 115), help="How many values should\
-                      get replaced.")
-@click.option('--jpg', is_flag=True, help="Output to jpg instead of png.\
-                      Note that png is more stable")
-@click.option('--output', '-o', help="What to call your glitched file.")
-@click.argument('image', type=click.File('rb'))
-def cli(image, amount, seed, iterations, jpg, output):
-    image_bytes = bytearray(image.read())
-    jpeg = Jpeg(image_bytes, amount, seed, iterations)
-
-    click.echo("\nScrambling your image with the following parameters:")
-    for key, value in jpeg.parameters.items():
-        click.echo(message=key + ': ' + str(value))
-
-    if output:
-        # TODO
-        # make the extension here count as guide for what to save the file as
-        # for now just ignore it if it's given
-        name = output.rsplit('.')[0]
-    else:
-        name = image.name.rsplit('.')[0] + "_glitched"
-
-    name += '%s' % ('.jpg' if jpg else '.png')
-
-    jpeg.save_image(name)
-
-    output = "\nSucces! Checkout %s." % name
-    click.echo(output)
-	
-if __name__ == '__main__':
-    cli()
+            except IOError as e:
+                if self.iterations == 1:
+                    raise JpegError(str(e))
+                self.iterations -= 1
