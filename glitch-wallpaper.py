@@ -15,7 +15,7 @@ from pathlib import Path
 
 class GlitchWallpaper:
 
-    def __init__(self, directory, cache_dir=None, frames=3, delay=.65, shuffle=True):
+    def __init__(self, directory, cache_dir=None, frames=3, delay=100, shuffle=True):
 
         if cache_dir is None:
             self.cache_dir = Path.home() / '.cache/glitch-wallpaper'
@@ -26,6 +26,7 @@ class GlitchWallpaper:
         self.shuffle = shuffle
         self.position = 0
         self.delay = delay
+        self.frames = frames
 
         self.wallpapers = []
 
@@ -37,19 +38,60 @@ class GlitchWallpaper:
             random.shuffle(self.wallpapers)
 
 
-    def transition(self):
+    def transition(self):        
 
-        gsettings_command = ['gsettings', 'set', 'org.gnome.desktop.background', 'picture-uri']
+        # nitrogen
+        try:
+            for screen_num in range(10):
+                for frame in self._make_transition_frames(offset=screen_num):
+                    nitrogen_command = ['nitrogen', '--head={}'.format(screen_num), '--set-zoom', frame]
+                    nitrogen_process = sp.run(nitrogen_command, stderr=sp.PIPE)
+                    if not 'Could not find' in nitrogen_process.stderr.decode():
+                        sleep_time = random.randint(0, (int(self.delay/self.frames)*2)) / 1000
+                        sleep(sleep_time)
 
-        old_position = (self.position % len(self.wallpapers))
+        except (sp.CalledProcessError, FileNotFoundError) as e:
+            sys.stderr.write('[!] Error with nitrogen: {}\n'.format(str(e)))
+            sys.stderr.write('[!] Falling back to feh: {}\n'.format(str(e)))
+
+            for frame in self._make_transition_frames():
+
+                sleep_time = random.randint(0, (int(self.delay/self.frames)*2)) / 1000
+
+                # feh
+                try:
+                    feh_command = ['feh', '--bg-max', frame]
+                    sp.run(feh_command, check=True)
+                    sleep(sleep_time)
+                except (sp.CalledProcessError, FileNotFoundError) as e:
+                    sys.stderr.write('[!] Error with feh: {}\n'.format(str(e)))
+                    sys.stderr.write('[!] Falling back to gsettings: {}\n'.format(str(e)))
+
+                    # gsettings
+                    try:
+                        gsettings_command = ['gsettings', 'set', 'org.gnome.desktop.background', 'picture-uri']
+                        sp.run(gsettings_command + ['file://{}'.format(frame)], check=True)
+                        sleep(sleep_time + .4)
+                    except (sp.CalledProcessError, FileNotFoundError) as e:
+                        sys.stderr.write('[!] Error with gsettings: {}'.format(str(e)))
+
+                
+                    
+
+        # increment counter
+        self.position += 1
+
+
+
+    def _make_transition_frames(self, offset=0):
+
+        old_position = ((self.position + offset) % len(self.wallpapers))
 
         # glitch current wallpaper
         cur_wallpaper, cur_glitch_frames = self.wallpapers[old_position]
         random.shuffle(cur_glitch_frames)
         for frame in cur_glitch_frames:
-            sp.run(gsettings_command + ['file://{}'.format(frame)])
-            sleep(self.delay)
-
+            yield frame
 
         new_position = ((old_position+1) % len(self.wallpapers))
 
@@ -57,14 +99,9 @@ class GlitchWallpaper:
         new_wallpaper, new_glitch_frames = self.wallpapers[new_position]
         random.shuffle(new_glitch_frames)
         for frame in new_glitch_frames:
-            sp.run(gsettings_command + ['file://{}'.format(frame)])
-            sleep(self.delay)
+            yield frame
 
-        # set new wallpaper
-        sp.run(gsettings_command + ['file://{}'.format(new_wallpaper)])
-
-        # increment counter
-        self.position += 1
+        yield new_wallpaper
 
 
     def gen_cache(self):
@@ -129,10 +166,10 @@ class GlitchWallpaper:
                         new_filename = self.cache_dir / (filename.stem + '.jpg')
                         sp.run(['convert', str(filename), str(new_filename)], check=True)
                         yield new_filename
-                    except sp.CalledProcessError:
+                    except (FileNotFoundError, sp.CalledProcessError) as e:
                         sys.stderr.write('[!] Unsupported file: {}\n'.format(filename.name))
                         sys.stderr.write('[!]  - please install imagemagick in order to use {} files\n'.format(filename.suffix))
-                        sys.stderr.write('[!]  - e.g. "apt install imagemagick"')
+                        sys.stderr.write('[!]  - e.g. "apt install imagemagick"\n')
 
 
 
@@ -148,7 +185,7 @@ class GlitchWallpaper:
 def main(options):
 
     g = GlitchWallpaper(options.directory, cache_dir=options.cache_dir, frames=options.frames, shuffle=(not options.dont_shuffle))
-    sp.run(['gsettings', 'set', 'org.gnome.desktop.background', 'picture-options', options.placement])
+    sp.run(['gsettings', 'set', 'org.gnome.desktop.background', 'picture-options', 'scaled'])
 
     while 1:
         g.transition()
@@ -158,23 +195,17 @@ def main(options):
 
 if __name__ == '__main__':
 
-    valid_placements = ['centered', 'none', 'scaled', 'spanned', 'stretched', 'wallpaper', 'zoom']
-
     parser = argparse.ArgumentParser()
 
     parser.add_argument('directory',                type=Path,                      help='folder containing wallpapers')
     parser.add_argument('-d', '--dont-shuffle',     action='store_true',            help='disable shuffling of images')
     parser.add_argument('-t', '--transition-time',  type=int,   default=60,         help='time in seconds between transitions')
     parser.add_argument('-f', '--frames',           type=int,   default=3,          help='number of frames per transition')
-    parser.add_argument('-p', '--placement',                    default='scaled',   help=', '.join(valid_placements))
     parser.add_argument('-c', '--cache-dir',                                        help='directory to hold glitch resources')
 
     try:
 
         options = parser.parse_args()
-
-        options.placement = options.placement.lower()
-        assert options.placement in valid_placements, 'Invalid placement'
 
         main(options)
 

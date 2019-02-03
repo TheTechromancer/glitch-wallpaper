@@ -109,7 +109,7 @@ class Jpeg(object):
                 im.save(name)
                 return
 
-            except IOError as e:
+            except (SyntaxError, IOError) as e:
                 if self.iterations == 1:
                     raise JpegError(str(e))
                 self.iterations -= 1

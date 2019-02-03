@@ -1,9 +1,5 @@
-*.swp
 *.png
 *.jpg
 *.jpeg
 *.pyc
-venv/*
-build/*
-dist/*
-*.egg-info/*
+__pycache__
