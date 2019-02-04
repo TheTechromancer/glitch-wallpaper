@@ -4,14 +4,14 @@
 ![glitch_wallpaper](https://orig00.deviantart.net/ef8c/f/2019/034/d/c/glitch_gif_2_by_thetechromancer-dcytyaw.gif "Glitch Wallpaper Demo")
 <br>
 
-#### Features:
+### Features:
 - Recursively searches directory for images
 - JPEGs and PNGs are supported
 - Customize duration, transition time, etc.
 
 <br>
 
-#### Installation
+### Installation
 - Clone repo
 ~~~
 $ git clone https://github.com/thetechromancer/glitch-wallpaper
@@ -33,8 +33,7 @@ $ sudo apt install imagemagick
 
 <br>
 
-#### Usage
-
+### Usage
 ~~~
 $ ./glitch-wallpaper.py --help
 usage: glitch-wallpaper.py [-h] [-d] [-t TRANSITION_TIME] [-f FRAMES]
@@ -57,8 +56,8 @@ optional arguments:
 
 <br>
 
-#### Example #1
-Start from the command line
+### Example #1
+Start from the command line.  Just give it a folder containing pictures.
 ~~~
 $ ./glitch-wallpaper.py ~/Pictures
 [+] Generated frames for muyoung-kim-walk-in-the-rain-lr-myk.jpg          
@@ -67,8 +66,8 @@ $ ./glitch-wallpaper.py ~/Pictures
 [+] All frames generated.
 ~~~
 
-#### Example #2
-Run in the background as a Systemd service (will start automatically on boot)
+### Example #2
+Run in the background as a Systemd service (will start automatically on boot).
 ~~~
 $ ./glitch-wallpaper.py --install ~/Pictures
 [+] Installing service
