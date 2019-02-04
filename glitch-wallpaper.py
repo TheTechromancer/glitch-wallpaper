@@ -182,7 +182,65 @@ class GlitchWallpaper:
 
 
 
+def install(options):
+
+    script_name = Path(__file__).resolve()
+    script_dir_name = script_name.parent
+
+    options_str = []
+    if options.dont_shuffle:
+        options_str.append('--dont-shuffle')
+    if options.cache_dir is not None:
+        options_str.append('--cache-dir {}'.format(options.cache-dir))
+    options_str.append('--transition-time {}'.format(options.transition_time))
+    options_str.append('--frames {}'.format(options.frames))
+    options_str.append(str(options.directory))
+
+    params = {
+        'script_name': str(script_name),
+        'script_dir_name': str(script_dir_name),
+        'current_user': str(os.getlogin()),
+        'argv': ' '.join(options_str),
+        'display_env': 'DISPLAY={}'.format(str(os.environ['DISPLAY']))
+    }
+
+    service_content = '''
+[Unit]
+Description=Glitch Wallpaper
+
+[Service]
+Type=exec
+WorkingDirectory={script_dir_name}
+ExecStart=/usr/bin/env python3 {script_name} {argv}
+User={current_user}
+Environment={display_env}
+
+[Install]
+WantedBy=multi-user.target
+'''.format(**params)
+
+    with open('/tmp/glitch-wallpaper.service', 'w') as f:
+        f.write(service_content)
+
+    print('[+] Installing service')
+    print('[+] Please provide password if prompted')
+    sp.run(['sudo', 'mv', '/tmp/glitch-wallpaper.service', '/etc/systemd/system/'])
+
+    print('[+] Starting service')
+    sp.run(['sudo', 'systemctl', 'enable', 'glitch-wallpaper.service'])
+    sp.run(['sudo', 'systemctl', 'start', 'glitch-wallpaper.service'])
+
+    print('[+] Done')
+    print('[+] Type the following command to check status of service:')
+    print('     - systemctl status glitch-wallpaper.service')
+
+
+
+
+
 def main(options):
+
+    options.directory = options.directory.resolve()
 
     g = GlitchWallpaper(options.directory, cache_dir=options.cache_dir, frames=options.frames, shuffle=(not options.dont_shuffle))
     sp.run(['gsettings', 'set', 'org.gnome.desktop.background', 'picture-options', 'scaled'])
@@ -202,12 +260,16 @@ if __name__ == '__main__':
     parser.add_argument('-t', '--transition-time',  type=int,   default=60,         help='time in seconds between transitions')
     parser.add_argument('-f', '--frames',           type=int,   default=3,          help='number of frames per transition')
     parser.add_argument('-c', '--cache-dir',                                        help='directory to hold glitch resources')
+    parser.add_argument('-i', '--install',          action='store_true',            help='install and start systemd service with current options')
 
     try:
 
         options = parser.parse_args()
 
-        main(options)
+        if options.install:
+            install(options)
+        else:
+            main(options)
 
 
     except AssertionError as e:

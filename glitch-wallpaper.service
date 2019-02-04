@@ -1,0 +1,10 @@
+[Unit]
+Description=Glitch Wallpaper
+
+[Service]
+Type=exec
+WorkingDirectory=/opt/glitch-wallpaper
+ExecStart=/usr/bin/env python3 /opt/glitch-wallpaper/glitch-wallpaper.py
+
+[Install]
+WantedBy=multi-user.target
