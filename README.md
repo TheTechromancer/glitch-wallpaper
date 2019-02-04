@@ -4,8 +4,8 @@
 ![glitch_wallpaper](https://orig00.deviantart.net/ef8c/f/2019/034/d/c/glitch_gif_2_by_thetechromancer-dcytyaw.gif "Glitch Wallpaper Demo")
 <br>
 Artist Credit:
-["Ghost in the shell - Kuze fanart" by YUANYUE CHANG](https://www.artstation.com/artwork/JYDyd)
-["Walk in the Rain" by MuYoung Kim](https://www.artstation.com/artwork/w86knL)
+- ["Ghost in the shell - Kuze fanart" by YUANYUE CHANG](https://www.artstation.com/artwork/JYDyd)
+- ["Walk in the Rain" by MuYoung Kim](https://www.artstation.com/artwork/w86knL)
 <br>
 
 ### Features:
