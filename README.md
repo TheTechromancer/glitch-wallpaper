@@ -1,6 +1,7 @@
 # Glitch Wallpaper
-### Glitch animations between desktop backgrounds / wallpapers in Linux
+### Automatic glitch transition animations for Linux desktop backgrounds / wallpapers
 
+![glitch_wallpaper](https://orig00.deviantart.net/ef8c/f/2019/034/d/c/glitch_gif_2_by_thetechromancer-dcytyaw.gif "Glitch Wallpaper Demo")
 <br>
 
 #### Features:
