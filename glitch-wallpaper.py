@@ -196,12 +196,17 @@ def install(options):
     options_str.append('--frames {}'.format(options.frames))
     options_str.append(str(options.directory))
 
+    try:
+        display_var = str(os.environ['DISPLAY'])
+    except KeyError:
+        display_var = ':0'
+
     params = {
         'script_name': str(script_name),
         'script_dir_name': str(script_dir_name),
         'current_user': str(os.getlogin()),
         'argv': ' '.join(options_str),
-        'display_env': 'DISPLAY={}'.format(str(os.environ['DISPLAY']))
+        'display_env': 'DISPLAY={}'.format(display_var)
     }
 
     service_content = '''

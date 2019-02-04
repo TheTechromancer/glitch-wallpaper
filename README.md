@@ -1,5 +1,5 @@
 # Glitch Wallpaper
-### Create glitch animations between desktop backgrounds / wallpapers in Linux
+### Glitch animations between desktop backgrounds / wallpapers in Linux
 
 <br>
 
