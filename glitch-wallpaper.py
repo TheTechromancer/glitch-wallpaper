@@ -63,7 +63,12 @@ class GlitchWallpaper:
                     feh_command = ['feh', '--bg-max', frame]
                     sp.run(feh_command, check=True)
                     sleep(sleep_time)
-                except (sp.CalledProcessError, FileNotFoundError) as e:
+
+                except sp.CalledProcessError as e:
+                    sys.stderr.write('[!] Error with feh: {}\n'.format(str(e)))
+                    continue
+
+                except FileNotFoundError as e:
                     sys.stderr.write('[!] Error with feh: {}\n'.format(str(e)))
                     sys.stderr.write('[!] Falling back to gsettings: {}\n'.format(str(e)))
 
