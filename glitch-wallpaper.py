@@ -6,6 +6,7 @@ import os
 import sys
 import random
 import argparse
+import datetime
 from jpeg import *
 from time import sleep
 import subprocess as sp
@@ -15,7 +16,7 @@ from pathlib import Path
 
 class GlitchWallpaper:
 
-    def __init__(self, directory, cache_dir=None, frames=3, delay=100, shuffle=True):
+    def __init__(self, directory, cache_dir=None, frames=3, delay=(0, .4), shuffle=True):
 
         if cache_dir is None:
             self.cache_dir = Path.home() / '.cache/glitch-wallpaper'
@@ -33,7 +34,7 @@ class GlitchWallpaper:
         self.directory = Path(directory)
         assert directory.is_dir(), 'Problem accessing wallpaper directory: {}'.format(str(directory))
 
-        self.gen_cache()
+        self._gen_cache()
         if self.shuffle:
             random.shuffle(self.wallpapers)
 
@@ -45,10 +46,14 @@ class GlitchWallpaper:
             for screen_num in range(10):
                 for frame in self._make_transition_frames(offset=screen_num):
                     nitrogen_command = ['nitrogen', '--head={}'.format(screen_num), '--set-zoom', frame]
+
+                    start_time = datetime.datetime.now()
                     nitrogen_process = sp.run(nitrogen_command, stderr=sp.PIPE)
+                    end_time = datetime.datetime.now()
+                    time_diff = end_time - start_time
+
                     if not 'Could not find' in nitrogen_process.stderr.decode():
-                        sleep_time = random.randint(0, (int(self.delay/self.frames)*2)) / 1000
-                        sleep(sleep_time)
+                        self._sleep(time_diff)
 
         except (sp.CalledProcessError, FileNotFoundError) as e:
             sys.stderr.write('[!] Error with nitrogen: {}\n'.format(str(e)))
@@ -56,13 +61,14 @@ class GlitchWallpaper:
 
             for frame in self._make_transition_frames():
 
-                sleep_time = random.randint(0, (int(self.delay/self.frames)*2)) / 1000
-
                 # feh
                 try:
                     feh_command = ['feh', '--bg-max', frame]
+                    start_time = datetime.datetime.now()
                     sp.run(feh_command, check=True)
-                    sleep(sleep_time)
+                    end_time = datetime.datetime.now()
+                    time_diff = end_time - start_time
+                    self._sleep(time_diff)
 
                 except sp.CalledProcessError as e:
                     sys.stderr.write('[!] Error with feh: {}\n'.format(str(e)))
@@ -76,12 +82,9 @@ class GlitchWallpaper:
                     try:
                         gsettings_command = ['gsettings', 'set', 'org.gnome.desktop.background', 'picture-uri']
                         sp.run(gsettings_command + ['file://{}'.format(frame)], check=True)
-                        sleep(sleep_time + .4)
+                        sleep(max(sleep_time, .4))
                     except (sp.CalledProcessError, FileNotFoundError) as e:
                         sys.stderr.write('[!] Error with gsettings: {}'.format(str(e)))
-
-                
-                    
 
         # increment counter
         self.position += 1
@@ -109,7 +112,23 @@ class GlitchWallpaper:
         yield new_wallpaper
 
 
-    def gen_cache(self):
+    def _sleep(self, d):
+        '''
+        takes time delta to subtract
+        sleeps based on min, max value of self.delay
+        '''
+        floor,ceiling = self.delay
+        floor = int(floor *1000)
+        ceiling = int(ceiling * 1000)
+        delay = random.randint(floor,ceiling)
+
+        sleep_time = datetime.timedelta(seconds=delay/1000)
+        sleep_time = sleep_time - d
+        if not sleep_time.days < 0:
+            sleep(sleep_time.seconds + (sleep_time.microseconds / 1000000))
+
+
+    def _gen_cache(self):
 
         for image in self.find_images():
 
