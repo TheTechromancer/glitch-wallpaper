@@ -16,7 +16,7 @@ from pathlib import Path
 
 class GlitchWallpaper:
 
-    def __init__(self, directory, cache_dir=None, frames=3, delay=(0, .35), shuffle=True):
+    def __init__(self, directory, cache_dir=None, frames=3, delay=(0, .5), shuffle=True):
 
         if cache_dir is None:
             self.cache_dir = Path.home() / '.cache/glitch-wallpaper'
@@ -121,6 +121,7 @@ class GlitchWallpaper:
         floor = int(floor *1000)
         ceiling = int(ceiling * 1000)
         delay = random.randint(floor,ceiling)
+        delay = random.randint(floor, delay)
 
         sleep_time = datetime.timedelta(seconds=delay/1000)
         sleep_time = sleep_time - d
