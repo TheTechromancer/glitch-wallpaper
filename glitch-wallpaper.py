@@ -16,7 +16,7 @@ from pathlib import Path
 
 class GlitchWallpaper:
 
-    def __init__(self, directory, cache_dir=None, frames=3, delay=(0, .4), shuffle=True):
+    def __init__(self, directory, cache_dir=None, frames=3, delay=(0, .35), shuffle=True):
 
         if cache_dir is None:
             self.cache_dir = Path.home() / '.cache/glitch-wallpaper'
