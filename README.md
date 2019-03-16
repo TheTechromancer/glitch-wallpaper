@@ -15,6 +15,11 @@ Artist Credit:
 
 <br>
 
+### Notes:
+- For best performance, I recommend using JPEGs which match (or are close to) your native display resolution.  Using larger-resolution images or PNGs can cause lag between frames.
+
+<br>
+
 ### Installation
 - Clone repo
 ~~~
