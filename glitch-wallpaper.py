@@ -315,10 +315,10 @@ if __name__ == '__main__':
 
 
     except AssertionError as e:
-        sys.stderr.write('[!] {}'.format(str(e)))
+        sys.stderr.write('\n[!] {}\n'.format(str(e)))
 
     except KeyboardInterrupt:
-        sys.stderr.write('\n\n[!] Interrupted')
+        sys.stderr.write('\n\n[!] Interrupted\n')
 
     except argparse.ArgumentError as e:
         sys.stderr.write('\n\n[!] {}\n[!] Check your syntax'.format(str(e)))
