@@ -39,52 +39,58 @@ class GlitchWallpaper:
             random.shuffle(self.wallpapers)
 
 
-    def transition(self):        
+    def transition(self):
+
+        nitrogen_success = False
 
         # nitrogen
         try:
             for screen_num in range(10):
                 for frame in self._make_transition_frames(offset=screen_num):
-                    nitrogen_command = ['nitrogen', '--head={}'.format(screen_num), '--set-zoom', frame]
+                    nitrogen_command = ['nitrogen', '--head={}'.format(screen_num), '--set-zoom', str(frame)]
 
                     start_time = datetime.datetime.now()
-                    nitrogen_process = sp.run(nitrogen_command, stderr=sp.PIPE)
+                    nitrogen_process = sp.run(nitrogen_command, stderr=sp.PIPE, check=True)
                     end_time = datetime.datetime.now()
                     time_diff = end_time - start_time
 
                     if not 'Could not find' in nitrogen_process.stderr.decode():
                         self._sleep(time_diff)
 
+                nitrogen_success = True
+
         except (sp.CalledProcessError, FileNotFoundError) as e:
             sys.stderr.write('[!] Error with nitrogen: {}\n'.format(str(e)))
-            sys.stderr.write('[!] Falling back to feh: {}\n'.format(str(e)))
 
-            for frame in self._make_transition_frames():
+            if not nitrogen_success:
+                sys.stderr.write('[!] Falling back to feh: {}\n'.format(str(e)))
 
-                # feh
-                try:
-                    feh_command = ['feh', '--bg-max', frame]
-                    start_time = datetime.datetime.now()
-                    sp.run(feh_command, check=True)
-                    end_time = datetime.datetime.now()
-                    time_diff = end_time - start_time
-                    self._sleep(time_diff)
+                for frame in self._make_transition_frames():
 
-                except sp.CalledProcessError as e:
-                    sys.stderr.write('[!] Error with feh: {}\n'.format(str(e)))
-                    continue
-
-                except FileNotFoundError as e:
-                    sys.stderr.write('[!] Error with feh: {}\n'.format(str(e)))
-                    sys.stderr.write('[!] Falling back to gsettings: {}\n'.format(str(e)))
-
-                    # gsettings
+                    # feh
                     try:
-                        gsettings_command = ['gsettings', 'set', 'org.gnome.desktop.background', 'picture-uri']
-                        sp.run(gsettings_command + ['file://{}'.format(frame)], check=True)
-                        sleep(max(sleep_time, .4))
-                    except (sp.CalledProcessError, FileNotFoundError) as e:
-                        sys.stderr.write('[!] Error with gsettings: {}'.format(str(e)))
+                        feh_command = ['feh', '--bg-max', frame]
+                        start_time = datetime.datetime.now()
+                        sp.run(feh_command, check=True)
+                        end_time = datetime.datetime.now()
+                        time_diff = end_time - start_time
+                        self._sleep(time_diff)
+
+                    except sp.CalledProcessError as e:
+                        sys.stderr.write('[!] Error with feh: {}\n'.format(str(e)))
+                        continue
+
+                    except FileNotFoundError as e:
+                        sys.stderr.write('[!] Error with feh: {}\n'.format(str(e)))
+                        sys.stderr.write('[!] Falling back to gsettings: {}\n'.format(str(e)))
+
+                        # gsettings
+                        try:
+                            gsettings_command = ['gsettings', 'set', 'org.gnome.desktop.background', 'picture-uri']
+                            sp.run(gsettings_command + ['file://{}'.format(frame)], check=True)
+                            sleep(max(sleep_time, .4))
+                        except (sp.CalledProcessError, FileNotFoundError) as e:
+                            sys.stderr.write('[!] Error with gsettings: {}'.format(str(e)))
 
         # increment counter
         self.position += 1
@@ -312,7 +318,7 @@ if __name__ == '__main__':
         sys.stderr.write('[!] {}'.format(str(e)))
 
     except KeyboardInterrupt:
-        sys.stderr.write('[!] Interrupted')
+        sys.stderr.write('\n\n[!] Interrupted')
 
     except argparse.ArgumentError as e:
         sys.stderr.write('\n\n[!] {}\n[!] Check your syntax'.format(str(e)))
