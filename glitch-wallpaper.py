@@ -98,15 +98,21 @@ class GlitchWallpaper:
         # glitch current wallpaper
         cur_wallpaper, cur_glitch_frames = self.wallpapers[old_position]
         random.shuffle(cur_glitch_frames)
-        for frame in cur_glitch_frames:
+        for frame in cur_glitch_frames[:-1]:
             yield frame
 
         new_position = ((old_position+1) % len(self.wallpapers))
 
+        # shuffle the whole deck if we're back to zero
+        if new_position == 0 and self.shuffle:
+            random.shuffle(self.wallpapers)
+
         # glitch new wallpaper
         new_wallpaper, new_glitch_frames = self.wallpapers[new_position]
         random.shuffle(new_glitch_frames)
-        for frame in new_glitch_frames:
+        yield new_glitch_frames[0]
+        yield cur_glitch_frames[-1]
+        for frame in new_glitch_frames[1:]:
             yield frame
 
         yield new_wallpaper
@@ -137,7 +143,7 @@ class GlitchWallpaper:
             image_bytes = bytearray(image.read_bytes())
             jpeg = Jpeg(image_bytes)
 
-            for i in range(options.frames):
+            for i in range(self.frames):
 
                 frame_filename = self.cache_dir / '{}___{}.png'.format(image.name, i)
 
