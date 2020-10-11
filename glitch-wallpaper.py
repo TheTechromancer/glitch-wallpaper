@@ -5,6 +5,7 @@
 import os
 import sys
 import random
+import hashlib
 import argparse
 import datetime
 from jpeg import *
@@ -32,7 +33,7 @@ class GlitchWallpaper:
         self.wallpapers = []
 
         self.directory = Path(directory)
-        assert directory.is_dir(), 'Problem accessing wallpaper directory: {}'.format(str(directory))
+        assert directory.is_dir(), f'Problem accessing wallpaper directory: {directory}'
 
         self._gen_cache()
         if self.shuffle:
@@ -47,7 +48,7 @@ class GlitchWallpaper:
         try:
             for screen_num in range(10):
                 for frame in self._make_transition_frames(offset=screen_num):
-                    nitrogen_command = ['nitrogen', '--head={}'.format(screen_num), '--set-zoom', str(frame)]
+                    nitrogen_command = ['nitrogen', f'--head={screen_num}', '--set-zoom', str(frame)]
 
                     start_time = datetime.datetime.now()
                     nitrogen_process = sp.run(nitrogen_command, stderr=sp.PIPE, check=True)
@@ -60,10 +61,10 @@ class GlitchWallpaper:
                 nitrogen_success = True
 
         except (sp.CalledProcessError, FileNotFoundError) as e:
-            sys.stderr.write('[!] Error with nitrogen: {}\n'.format(str(e)))
+            sys.stderr.write(f'[!] Error with nitrogen: {e}\n')
 
             if not nitrogen_success:
-                sys.stderr.write('[!] Falling back to feh: {}\n'.format(str(e)))
+                sys.stderr.write(f'[!] Falling back to feh: {e}\n')
 
                 for frame in self._make_transition_frames():
 
@@ -77,20 +78,20 @@ class GlitchWallpaper:
                         self._sleep(time_diff)
 
                     except sp.CalledProcessError as e:
-                        sys.stderr.write('[!] Error with feh: {}\n'.format(str(e)))
+                        sys.stderr.write(f'[!] Error with feh: {e}\n')
                         continue
 
                     except FileNotFoundError as e:
-                        sys.stderr.write('[!] Error with feh: {}\n'.format(str(e)))
-                        sys.stderr.write('[!] Falling back to gsettings: {}\n'.format(str(e)))
+                        sys.stderr.write(f'[!] Error with feh: {e}\n')
+                        sys.stderr.write(f'[!] Falling back to gsettings: {e}\n')
 
                         # gsettings
                         try:
                             gsettings_command = ['gsettings', 'set', 'org.gnome.desktop.background', 'picture-uri']
-                            sp.run(gsettings_command + ['file://{}'.format(frame)], check=True)
+                            sp.run(gsettings_command + [f'file://{frame}'], check=True)
                             sleep(max(sleep_time, .4))
                         except (sp.CalledProcessError, FileNotFoundError) as e:
-                            sys.stderr.write('[!] Error with gsettings: {}'.format(str(e)))
+                            sys.stderr.write(f'[!] Error with gsettings: {e}')
 
         # increment counter
         self.position += 1
@@ -147,15 +148,16 @@ class GlitchWallpaper:
 
             glitched_frames = []
             image_bytes = bytearray(image.read_bytes())
+            image_hash = hashlib.md5(image_bytes).hexdigest()
             jpeg = Jpeg(image_bytes)
 
             for i in range(self.frames):
 
-                frame_filename = self.cache_dir / '{}___{}.png'.format(image.name, i)
+                frame_filename = self.cache_dir / f'{image_hash}___{i}.png'
 
                 # checked for cached files
                 if self.is_cached(frame_filename):
-                    sys.stderr.write('\r[+] Found cached frame #{} for {}     '.format(i+1, image.name))
+                    sys.stderr.write(f'[+] Found cached frame #{i+1} for {image.name}')
 
                 else:
                     while 1:
@@ -164,23 +166,23 @@ class GlitchWallpaper:
                             jpeg.seed        = random.randint(0,99)
                             jpeg.iterations  = random.randint(0,115)
 
-                            sys.stderr.write('\r[+] Generating frame #{} for {}     '.format(i+1, image.name))
+                            sys.stderr.write(f'[+] Generating frame #{i+1} for {image.name}')
 
                             # create a new image if not cached
                             jpeg.save_image(frame_filename)
                             break
 
                         except JpegError as e:
-                            sys.stderr.write('[!] {}'.format(str(e)))
+                            sys.stderr.write(f'[!] {e}')
                             continue
 
                 glitched_frames.append(frame_filename)
 
 
             self.wallpapers.append((image, glitched_frames))
-            sys.stderr.write('\r[+] Generated frames for {}     \n'.format(image.name))
+            sys.stderr.write(f'[+] Generated frames for {image.name}')
 
-        sys.stderr.write('\r[+] All frames generated.              ')
+        sys.stderr.write('[+] All frames generated.')
 
 
     def find_images(self):
@@ -204,8 +206,8 @@ class GlitchWallpaper:
                         sp.run(['convert', str(filename), str(new_filename)], check=True)
                         yield new_filename
                     except (FileNotFoundError, sp.CalledProcessError) as e:
-                        sys.stderr.write('[!] Unsupported file: {}\n'.format(filename.name))
-                        sys.stderr.write('[!]  - please install imagemagick in order to use {} files\n'.format(filename.suffix))
+                        sys.stderr.write(f'[!] Unsupported file: {filename.name}\n')
+                        sys.stderr.write(f'[!]  - please install imagemagick in order to use {filename.suffix} files\n')
                         sys.stderr.write('[!]  - e.g. "apt install imagemagick"\n')
 
 
@@ -228,9 +230,9 @@ def install(options):
     if options.dont_shuffle:
         options_str.append('--dont-shuffle')
     if options.cache_dir is not None:
-        options_str.append('--cache-dir {}'.format(options.cache-dir))
-    options_str.append('--transition-time {}'.format(options.transition_time))
-    options_str.append('--frames {}'.format(options.frames))
+        options_str.append(f'--cache-dir {options.cache_dir}')
+    options_str.append(f'--transition-time {options.transition_time}')
+    options_str.append(f'--frames {options.frames}')
     options_str.append(str(options.directory))
 
     try:
@@ -238,28 +240,20 @@ def install(options):
     except KeyError:
         display_var = ':0'
 
-    params = {
-        'script_name': str(script_name),
-        'script_dir_name': str(script_dir_name),
-        'current_user': str(os.getlogin()),
-        'argv': ' '.join(options_str),
-        'display_env': 'DISPLAY={}'.format(display_var)
-    }
-
-    service_content = '''
+    service_content = f'''
 [Unit]
 Description=Glitch Wallpaper
 
 [Service]
 Type=exec
 WorkingDirectory={script_dir_name}
-ExecStart=/usr/bin/env python3 {script_name} {argv}
-User={current_user}
-Environment={display_env}
+ExecStart=/usr/bin/env python3 {script_name} {" ".join(options_str)}
+User={os.getlogin()}
+Environment=DISPLAY={display_env}
 
 [Install]
 WantedBy=multi-user.target
-'''.format(**params)
+'''
 
     with open('/tmp/glitch-wallpaper.service', 'w') as f:
         f.write(service_content)
@@ -315,11 +309,11 @@ if __name__ == '__main__':
 
 
     except AssertionError as e:
-        sys.stderr.write('\n[!] {}\n'.format(str(e)))
+        sys.stderr.write(f'\n[!] {e}\n')
 
     except KeyboardInterrupt:
         sys.stderr.write('\n\n[!] Interrupted\n')
 
     except argparse.ArgumentError as e:
-        sys.stderr.write('\n\n[!] {}\n[!] Check your syntax'.format(str(e)))
+        sys.stderr.write(f'\n\n[!] {e}\n[!] Check your syntax')
         exit(2)

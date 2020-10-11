@@ -45,9 +45,7 @@ $ sudo apt install imagemagick
 ### Usage
 ~~~
 $ ./glitch-wallpaper.py --help
-usage: glitch-wallpaper.py [-h] [-d] [-t TRANSITION_TIME] [-f FRAMES]
-                           [-c CACHE_DIR]
-                           directory
+usage: glitch-wallpaper.py [-h] [-d] [-t TRANSITION_TIME] [-f FRAMES] [-c CACHE_DIR] [-i] directory
 
 positional arguments:
   directory             folder containing wallpapers
@@ -61,6 +59,7 @@ optional arguments:
                         number of frames per transition
   -c CACHE_DIR, --cache-dir CACHE_DIR
                         directory to hold glitch resources
+  -i, --install         install and start systemd service with current options
 ~~~
 
 <br>
