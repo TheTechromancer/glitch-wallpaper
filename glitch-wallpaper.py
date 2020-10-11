@@ -61,10 +61,10 @@ class GlitchWallpaper:
                 nitrogen_success = True
 
         except (sp.CalledProcessError, FileNotFoundError) as e:
-            sys.stderr.write(f'[!] Error with nitrogen: {e}\n')
+            errprint(f'[!] Error with nitrogen: {e}')
 
             if not nitrogen_success:
-                sys.stderr.write(f'[!] Falling back to feh: {e}\n')
+                errprint(f'[!] Falling back to feh: {e}')
 
                 for frame in self._make_transition_frames():
 
@@ -78,12 +78,12 @@ class GlitchWallpaper:
                         self._sleep(time_diff)
 
                     except sp.CalledProcessError as e:
-                        sys.stderr.write(f'[!] Error with feh: {e}\n')
+                        errprint(f'[!] Error with feh: {e}')
                         continue
 
                     except FileNotFoundError as e:
-                        sys.stderr.write(f'[!] Error with feh: {e}\n')
-                        sys.stderr.write(f'[!] Falling back to gsettings: {e}\n')
+                        errprint(f'[!] Error with feh: {e}')
+                        errprint(f'[!] Falling back to gsettings: {e}')
 
                         # gsettings
                         try:
@@ -91,7 +91,7 @@ class GlitchWallpaper:
                             sp.run(gsettings_command + [f'file://{frame}'], check=True)
                             sleep(max(sleep_time, .4))
                         except (sp.CalledProcessError, FileNotFoundError) as e:
-                            sys.stderr.write(f'[!] Error with gsettings: {e}')
+                            errprint(f'[!] Error with gsettings: {e}')
 
         # increment counter
         self.position += 1
@@ -157,7 +157,7 @@ class GlitchWallpaper:
 
                 # checked for cached files
                 if self.is_cached(frame_filename):
-                    sys.stderr.write(f'[+] Found cached frame #{i+1} for {image.name}')
+                    errprint(f'[+] Found cached frame #{i+1} for {image.name}')
 
                 else:
                     while 1:
@@ -166,23 +166,23 @@ class GlitchWallpaper:
                             jpeg.seed        = random.randint(0,99)
                             jpeg.iterations  = random.randint(0,115)
 
-                            sys.stderr.write(f'[+] Generating frame #{i+1} for {image.name}')
+                            errprint(f'[+] Generating frame #{i+1} for {image.name}')
 
                             # create a new image if not cached
                             jpeg.save_image(frame_filename)
                             break
 
                         except JpegError as e:
-                            sys.stderr.write(f'[!] {e}')
+                            errprint(f'[!] {e}')
                             continue
 
                 glitched_frames.append(frame_filename)
 
 
             self.wallpapers.append((image, glitched_frames))
-            sys.stderr.write(f'[+] Generated frames for {image.name}')
+            errprint(f'[+] Generated frames for {image.name}')
 
-        sys.stderr.write('[+] All frames generated.')
+        errprint('[+] All frames generated.')
 
 
     def find_images(self):
@@ -206,9 +206,9 @@ class GlitchWallpaper:
                         sp.run(['convert', str(filename), str(new_filename)], check=True)
                         yield new_filename
                     except (FileNotFoundError, sp.CalledProcessError) as e:
-                        sys.stderr.write(f'[!] Unsupported file: {filename.name}\n')
-                        sys.stderr.write(f'[!]  - please install imagemagick in order to use {filename.suffix} files\n')
-                        sys.stderr.write('[!]  - e.g. "apt install imagemagick"\n')
+                        errprint(f'[!] Unsupported file: {filename.name}')
+                        errprint(f'[!]  - please install imagemagick in order to use {filename.suffix} files')
+                        errprint('[!]  - e.g. "apt install imagemagick"')
 
 
 
@@ -272,6 +272,11 @@ WantedBy=multi-user.target
 
 
 
+def errprint(s):
+
+    sys.stderr.write(f'{s}\n')
+    sys.stderr.flush()
+
 
 
 def main(options):
@@ -309,11 +314,11 @@ if __name__ == '__main__':
 
 
     except AssertionError as e:
-        sys.stderr.write(f'\n[!] {e}\n')
+        errprint(f'\n[!] {e}')
 
     except KeyboardInterrupt:
-        sys.stderr.write('\n\n[!] Interrupted\n')
+        errprint('\n\n[!] Interrupted')
 
     except argparse.ArgumentError as e:
-        sys.stderr.write(f'\n\n[!] {e}\n[!] Check your syntax')
+        errprint(f'\n\n[!] {e}\n[!] Check your syntax')
         exit(2)
